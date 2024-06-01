@@ -3,7 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const port = process.env.PORT || 5000;
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 // Use cors middleware
 app.use(cors());
@@ -40,14 +40,12 @@ async function run() {
 
     app.post("/users", async (req, res) => {
       const user = req.body;
-      console.log(user);
       const result = await usersCollection.insertOne(user);
       res.send(result);
     });
 
     app.get("/users/:email", async (req, res) => {
       const email = req.params.email;
-      console.log(email);
       const query = { email: email };
       const user = await usersCollection.findOne(query);
       res.send(user);
@@ -60,7 +58,6 @@ const sessionCollection = client.db("StudyCircle").collection("sessions");
 
 app.post("/sessions", async (req, res) => {
   const session = req.body;
-  console.log(session);
   const result = await sessionCollection.insertOne(session);
   res.send(result);
 });
@@ -70,6 +67,25 @@ app.get("/sessions", async (req, res) => {
   const result = await data.toArray();
   res.send(result);
 });
+
+app.get("/sessions/:email", async (req, res) => {
+  const email = req.params.email;
+  const query = { tutorEmail: email };
+  const tutorSessions = await sessionCollection.find(query).toArray();
+  res.send(tutorSessions);
+});
+
+
+app.delete("/sessions/:id", async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) };
+  const result = await sessionCollection.deleteOne(query);
+  res.send(result);
+});
+
+
+
+
 
 
 
