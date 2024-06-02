@@ -79,7 +79,7 @@ async function run() {
       res.send(tutorSessions);
     });
 
-    app.put("/updateSessions/:id", async (req, res) => {
+    app.patch("/updateSessions/:id", async (req, res) => {
       const data = req.body;
       const paramsId = req.params.id;
       console.log(data);
@@ -90,7 +90,7 @@ async function run() {
           materials: {
             "materialTitle": data.materialTitle,
             "link": data.link,
-            "URL": data.URL,
+            "URL": data.URL || '',
           },
         },
       };
