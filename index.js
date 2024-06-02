@@ -86,20 +86,46 @@ async function run() {
       const filter = { _id: new ObjectId(paramsId) };
       const options = { upsert: true };
       const updateDoc = {
-        $set: {
-          materials: {
-            "materialTitle": data.materialTitle,
-            "link": data.link,
-            "URL": data.URL || '',
-          },
+        $push: {
+          materials: data,
         },
       };
+
       const result = await sessionCollection.updateOne(
         filter,
         updateDoc,
         options
       );
       res.send(result);
+    });
+
+    ////////Fetch All Materials/////////////
+    app.get("/materials/:email", async (req, res) => {
+        const email = req.params.email;
+        const query = { tutorEmail: email };
+        console.log(email );
+        const tutorSessions = await sessionCollection.find(query).toArray();
+
+        const materialsWithSessionInfo = [];
+        // Extract materials with session info
+        tutorSessions.forEach(session => {
+          if (session.materials && session.materials.length > 0) {
+            session.materials.forEach(material => {
+              materialsWithSessionInfo.push({
+                sessionId: session._id,
+                sessionTitle: session.sessionTitle,
+                tutorName: session.tutorName,
+                materialId: material._id,
+                materialTitle: material.materialTitle,
+                materialLink: material.link,
+                materialURL: material.URL
+              });
+            });
+          }
+        });
+        
+        res.send(materialsWithSessionInfo);
+      
     });
 
     app.delete("/sessions/:id", async (req, res) => {
