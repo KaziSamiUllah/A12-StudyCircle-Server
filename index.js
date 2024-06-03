@@ -33,23 +33,22 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     /////////////////////user APIs////////////////////
-    const usersCollection = client.db("StudyCircle").collection("users");
+    const userCollection = client.db("StudyCircle").collection("users");
 
     app.post("/users", async (req, res) => {
       const user = req.body;
-      no;
-      const result = await usersCollection.insertOne(user);
+      const result = await userCollection.insertOne(user);
       res.send(result);
     });
 
     app.get("/users/:email", async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
-      const user = await usersCollection.findOne(query);
+      const user = await userCollection.findOne(query);
       res.send(user);
     });
 
-    ///////////////////sessions and materials APIs/////////////////////
+    ///////////////////sessions APIs/////////////////////
 
     const sessionCollection = client.db("StudyCircle").collection("sessions");
 
@@ -99,34 +98,6 @@ async function run() {
       res.send(result);
     });
 
-    ////////Fetch All Materials/////////////
-    app.get("/materials/:email", async (req, res) => {
-        const email = req.params.email;
-        const query = { tutorEmail: email };
-        console.log(email );
-        const tutorSessions = await sessionCollection.find(query).toArray();
-
-        const materialsWithSessionInfo = [];
-        // Extract materials with session info
-        tutorSessions.forEach(session => {
-          if (session.materials && session.materials.length > 0) {
-            session.materials.forEach(material => {
-              materialsWithSessionInfo.push({
-                sessionId: session._id,
-                sessionTitle: session.sessionTitle,
-                tutorName: session.tutorName,
-                materialId: material._id,
-                materialTitle: material.materialTitle,
-                materialLink: material.link,
-                materialURL: material.URL
-              });
-            });
-          }
-        });
-        
-        res.send(materialsWithSessionInfo);
-      
-    });
 
     app.delete("/sessions/:id", async (req, res) => {
       const id = req.params.id;
@@ -134,6 +105,79 @@ async function run() {
       const result = await sessionCollection.deleteOne(query);
       res.send(result);
     });
+
+    //////// Materials API/////////////
+    const materialCollection = client.db("StudyCircle").collection("materials");
+
+    app.post("/materials", async (req, res) => {
+      const material = req.body;
+      const result = await materialCollection.insertOne(material);
+      res.send(result);
+    });
+
+
+    app.get("/materials/:email", async (req, res) => {
+        const email = req.params.email;
+        const query = { tutorEmail: email };
+        const tutorMaterials = await materialCollection.find(query).toArray();
+        res.send(tutorMaterials);
+    });
+
+    app.get("/materialsbyID/:id", async (req, res) => {
+        const ID = req.params.id;
+        const query = { _id: new ObjectId(ID) };
+        const material = await materialCollection.findOne(query);
+        res.send(material);
+    });
+
+    app.put("/materials/:id", async (req, res) => {
+      const data = req.body;
+      const paramsId = req.params.id;
+      console.log(data, paramsId);
+      const filter = { _id: new ObjectId(paramsId) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          materialTitle: data.materialTitle,
+          link: data.link,
+          URL: data.URL,
+        },
+      };
+      const result = await materialCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
+    });
+
+    app.delete("/materials/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await materialCollection.deleteOne(query);
+      res.send(result);
+    });
+
+
+
+
+
+    ///////////////////Student related API//////////////////
+    const bookingCollection = client.db("StudyCircle").collection("bookings");
+    app.post("/bookings", async (req, res) => {
+      const bookings = req.body;
+      const result = await bookingCollection.insertOne(bookings);
+      res.send(result);
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
