@@ -162,9 +162,18 @@ async function run() {
     const bookingCollection = client.db("StudyCircle").collection("bookings");
     app.post("/bookings", async (req, res) => {
       const bookings = req.body;
+      console.log(bookings);
       const result = await bookingCollection.insertOne(bookings);
       res.send(result);
     });
+
+
+    app.get("/bookingsByEmail/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { StudentEmail: email };
+      const tutorMaterials = await bookingCollection.find(query).toArray();
+      res.send(tutorMaterials);
+  });
 
 
 
