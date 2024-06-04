@@ -78,25 +78,25 @@ async function run() {
       res.send(tutorSessions);
     });
 
-    app.patch("/updateSessions/:id", async (req, res) => {
-      const data = req.body;
-      const paramsId = req.params.id;
-      console.log(data);
-      const filter = { _id: new ObjectId(paramsId) };
-      const options = { upsert: true };
-      const updateDoc = {
-        $push: {
-          materials: data,
-        },
-      };
+    // app.patch("/updateSessions/:id", async (req, res) => {
+    //   const data = req.body;
+    //   const paramsId = req.params.id;
+    //   console.log(data);
+    //   const filter = { _id: new ObjectId(paramsId) };
+    //   const options = { upsert: true };
+    //   const updateDoc = {
+    //     $push: {
+    //       materials: data,
+    //     },
+    //   };
 
-      const result = await sessionCollection.updateOne(
-        filter,
-        updateDoc,
-        options
-      );
-      res.send(result);
-    });
+    //   const result = await sessionCollection.updateOne(
+    //     filter,
+    //     updateDoc,
+    //     options
+    //   );
+    //   res.send(result);
+    // });
 
 
     app.delete("/sessions/:id", async (req, res) => {
@@ -175,6 +175,47 @@ async function run() {
       res.send(tutorMaterials);
   });
 
+
+  ///////////////////Notes /////////////////////////
+
+  const noteCollection = client.db("StudyCircle").collection("notes");
+    app.post("/notes", async (req, res) => {
+      const note = req.body;
+      console.log(note);
+      const result = await noteCollection.insertOne(note);
+      res.send(result);
+    });
+
+    app.get("/notes/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { userEmail: email };
+      const result = await noteCollection.find(query).toArray();
+      res.send(result);
+  });
+
+    app.get("/notesById/:id", async (req, res) => {
+      const ID = req.params.id;
+      const query = { _id: new ObjectId(ID) };
+      const result = await noteCollection.findOne(query);
+      res.send(result);
+  });
+
+
+  app.put("/updateNotes/:id", async (req, res) => {
+    const data = req.body;
+    const paramsId = req.params.id;
+    console.log(data, paramsId);
+    const filter = { _id: new ObjectId(paramsId) };
+    const options = { upsert: true };
+    const updateDoc = {
+      $set: {
+        noteTitle: data.noteTitle,
+        noteDescription: data.noteDescription,
+      },
+    };
+    const result = await noteCollection.updateOne(filter, updateDoc, options);
+    res.send(result);
+  });
 
 
 
