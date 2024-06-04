@@ -195,6 +195,7 @@ async function run() {
 
     app.get("/notesById/:id", async (req, res) => {
       const ID = req.params.id;
+
       const query = { _id: new ObjectId(ID) };
       const result = await noteCollection.findOne(query);
       res.send(result);
@@ -204,7 +205,7 @@ async function run() {
   app.put("/updateNotes/:id", async (req, res) => {
     const data = req.body;
     const paramsId = req.params.id;
-    console.log(data, paramsId);
+
     const filter = { _id: new ObjectId(paramsId) };
     const options = { upsert: true };
     const updateDoc = {
@@ -216,6 +217,16 @@ async function run() {
     const result = await noteCollection.updateOne(filter, updateDoc, options);
     res.send(result);
   });
+
+
+  app.delete("/notesById/:id", async (req, res) => {
+    const id = req.params.id;
+    console.log(id);
+    const query = { _id: new ObjectId(id) };
+    const result = await noteCollection.deleteOne(query);
+    res.send(result);
+  });
+
 
 
 
