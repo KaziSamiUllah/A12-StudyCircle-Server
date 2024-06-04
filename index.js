@@ -98,7 +98,6 @@ async function run() {
     //   res.send(result);
     // });
 
-
     app.delete("/sessions/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -115,19 +114,18 @@ async function run() {
       res.send(result);
     });
 
-
     app.get("/materials/:email", async (req, res) => {
-        const email = req.params.email;
-        const query = { tutorEmail: email };
-        const tutorMaterials = await materialCollection.find(query).toArray();
-        res.send(tutorMaterials);
+      const email = req.params.email;
+      const query = { tutorEmail: email };
+      const tutorMaterials = await materialCollection.find(query).toArray();
+      res.send(tutorMaterials);
     });
 
     app.get("/materialsbyID/:id", async (req, res) => {
-        const ID = req.params.id;
-        const query = { _id: new ObjectId(ID) };
-        const material = await materialCollection.findOne(query);
-        res.send(material);
+      const ID = req.params.id;
+      const query = { _id: new ObjectId(ID) };
+      const material = await materialCollection.findOne(query);
+      res.send(material);
     });
 
     app.put("/materials/:id", async (req, res) => {
@@ -143,7 +141,11 @@ async function run() {
           URL: data.URL,
         },
       };
-      const result = await materialCollection.updateOne(filter, updateDoc, options);
+      const result = await materialCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
       res.send(result);
     });
 
@@ -154,10 +156,6 @@ async function run() {
       res.send(result);
     });
 
-
-
-
-
     ///////////////////Student related API//////////////////
     const bookingCollection = client.db("StudyCircle").collection("bookings");
     app.post("/bookings", async (req, res) => {
@@ -167,21 +165,61 @@ async function run() {
       res.send(result);
     });
 
-
     app.get("/bookingsByEmail/:email", async (req, res) => {
       const email = req.params.email;
       const query = { StudentEmail: email };
       const tutorMaterials = await bookingCollection.find(query).toArray();
       res.send(tutorMaterials);
-  });
+    });
 
 
-  ///////////////////Notes /////////////////////////
 
-  const noteCollection = client.db("StudyCircle").collection("notes");
+    app.get("/bookedSessionMaterials/:email", async (req, res) => {
+      const studentEmail = req.params.email;
+      console.log(studentEmail);
+      var pipeline = [
+        {
+          $match: {
+            StudentEmail: studentEmail,
+          },
+        },
+
+        {
+          $lookup: {
+            from: "materials",
+            localField: "sessionID",
+            foreignField: "sessionID",
+            as: "materialsdata",
+          },
+        },
+
+        {
+          $unwind: "$materialsdata", // Unwind to get individual material documents
+        },
+        {
+          $project: {
+            _id: 0, // Exclude _id field from output
+            materialTitle: "$materialsdata.materialTitle",
+            tutorEmail: "$materialsdata.tutorEmail",
+            sessionTitle: "$materialsdata.sessionTitle",
+            sessionID: "$materialsdata.sessionID",
+            link: "$materialsdata.link",
+            URL: "$materialsdata.URL",
+          },
+        },
+      ];
+
+      // Execute the aggregation pipeline
+      var result = await bookingCollection.aggregate(pipeline).toArray();
+      console.log(result);
+      res.send(result);
+    });
+
+    ///////////////////Notes /////////////////////////
+
+    const noteCollection = client.db("StudyCircle").collection("notes");
     app.post("/notes", async (req, res) => {
       const note = req.body;
-      console.log(note);
       const result = await noteCollection.insertOne(note);
       res.send(result);
     });
@@ -191,7 +229,7 @@ async function run() {
       const query = { userEmail: email };
       const result = await noteCollection.find(query).toArray();
       res.send(result);
-  });
+    });
 
     app.get("/notesById/:id", async (req, res) => {
       const ID = req.params.id;
@@ -199,46 +237,31 @@ async function run() {
       const query = { _id: new ObjectId(ID) };
       const result = await noteCollection.findOne(query);
       res.send(result);
-  });
+    });
 
+    app.put("/updateNotes/:id", async (req, res) => {
+      const data = req.body;
+      const paramsId = req.params.id;
 
-  app.put("/updateNotes/:id", async (req, res) => {
-    const data = req.body;
-    const paramsId = req.params.id;
+      const filter = { _id: new ObjectId(paramsId) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          noteTitle: data.noteTitle,
+          noteDescription: data.noteDescription,
+        },
+      };
+      const result = await noteCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
+    });
 
-    const filter = { _id: new ObjectId(paramsId) };
-    const options = { upsert: true };
-    const updateDoc = {
-      $set: {
-        noteTitle: data.noteTitle,
-        noteDescription: data.noteDescription,
-      },
-    };
-    const result = await noteCollection.updateOne(filter, updateDoc, options);
-    res.send(result);
-  });
+    app.delete("/notesById/:id", async (req, res) => {
+      const id = req.params.id;
 
-
-  app.delete("/notesById/:id", async (req, res) => {
-    const id = req.params.id;
-    console.log(id);
-    const query = { _id: new ObjectId(id) };
-    const result = await noteCollection.deleteOne(query);
-    res.send(result);
-  });
-
-
-
-
-
-
-
-
-
-
-
-
-
+      const query = { _id: new ObjectId(id) };
+      const result = await noteCollection.deleteOne(query);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
