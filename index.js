@@ -48,6 +48,33 @@ async function run() {
       res.send(user);
     });
 
+    app.get("/allUsers", async (req, res) => {
+      const user = await userCollection.find().toArray();
+      res.send(user);
+    });
+
+
+
+    app.put("/editUsers/:id", async (req, res) => {
+      const data = req.body;
+      const paramsId = req.params.id;
+      console.log(data, paramsId);
+      const filter = { _id: new ObjectId(paramsId) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          role: data.newRole,
+        },
+      };
+      const result = await userCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
+    });
+
+
+
+
+
+
     ///////////////////sessions APIs/////////////////////
 
     const sessionCollection = client.db("StudyCircle").collection("sessions");
@@ -201,6 +228,7 @@ async function run() {
             _id: 0, // Exclude _id field from output
             materialTitle: "$materialsdata.materialTitle",
             tutorEmail: "$materialsdata.tutorEmail",
+            tutorName: "$materialsdata.tutorName",
             sessionTitle: "$materialsdata.sessionTitle",
             sessionID: "$materialsdata.sessionID",
             link: "$materialsdata.link",
