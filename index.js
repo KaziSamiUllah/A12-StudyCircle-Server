@@ -113,6 +113,38 @@ async function run() {
       res.send(tutorSessions);
     });
 
+    app.get("/sessionsByStatus/:status", async (req, res) => {
+      const status = req.params.status;
+      // console.log(status);
+      const query = { status: status };
+      const sessionStatus = await sessionCollection.find(query).toArray();
+      res.send(sessionStatus);
+    });
+
+    app.put("/updateSessions/:id", async (req, res) => {
+      const data = req.body;
+      const paramsId = req.params?.id;
+      console.log(data, paramsId);
+      const filter = { _id: new ObjectId(paramsId)};
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+         status: data.status,
+         reason: data.reason || "",
+        },
+      };
+      const result = await sessionCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
+
+
+
+
+
     // app.patch("/updateSessions/:id", async (req, res) => {
     //   const data = req.body;
     //   const paramsId = req.params.id;
@@ -166,7 +198,7 @@ async function run() {
     app.put("/materials/:id", async (req, res) => {
       const data = req.body;
       const paramsId = req.params.id;
-      console.log(data, paramsId);
+      // console.log(data, paramsId);
       const filter = { _id: new ObjectId(paramsId) };
       const options = { upsert: true };
       const updateDoc = {
