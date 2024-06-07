@@ -106,6 +106,12 @@ async function run() {
       res.send(sessionData);
     });
 
+    app.get("/approvedSessions", async (req, res) => {
+      const query = { status: "Approved" };
+      const approved = await sessionCollection.find(query).toArray();
+      res.send(approved);
+    });
+
     app.get("/sessions/:email", async (req, res) => {
       const email = req.params.email;
       const query = { tutorEmail: email };
@@ -131,6 +137,7 @@ async function run() {
         $set: {
          status: data.status,
          reason: data.reason || "",
+         fee : data. fee || 0,
         },
       };
       const result = await sessionCollection.updateOne(
@@ -140,6 +147,40 @@ async function run() {
       );
       res.send(result);
     });
+
+
+    app.put("/updateSessionFull/:id", async (req, res) => {
+      const data = req.body;
+      const paramsId = req.params?.id;
+      console.log(data, paramsId);
+      const filter = { _id: new ObjectId(paramsId)};
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          sessionTitle: data.sessionTitle,
+          tutorName: data.tutorName,
+          tutorEmail: data.tutorEmail,
+          sessionDescription: data.sessionDescription,
+          regStart: data.regStart,
+          regEnd: data.regEnd,
+          classStart: data.classStart,
+          classEnd: data.classEnd,
+          status: data.status,
+          lessons: data.lessons,
+          fee: data.fee,
+          duration: data.duration,
+        },
+      };
+      const result = await sessionCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
+
+
+
 
 
 
@@ -166,10 +207,11 @@ async function run() {
     // });
 
     app.delete("/sessions/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
+      const ID = req.params.id;
+      console.log(ID);
+      const query = { _id: new ObjectId(ID) };
       const result = await sessionCollection.deleteOne(query);
-      res.send(result);
+      res.send(ID);
     });
 
     //////// Materials API/////////////
