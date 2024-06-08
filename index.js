@@ -53,8 +53,6 @@ async function run() {
       res.send(user);
     });
 
-
-
     app.put("/editUsers/:id", async (req, res) => {
       const data = req.body;
       const paramsId = req.params.id;
@@ -77,11 +75,6 @@ async function run() {
       // const result = await userCollection.deleteOne(query);
       // res.send(result);
     });
-
-
-
-
-
 
     ///////////////////sessions APIs/////////////////////
 
@@ -131,13 +124,13 @@ async function run() {
       const data = req.body;
       const paramsId = req.params?.id;
       console.log(data, paramsId);
-      const filter = { _id: new ObjectId(paramsId)};
+      const filter = { _id: new ObjectId(paramsId) };
       const options = { upsert: true };
       const updateDoc = {
         $set: {
-         status: data.status,
-         reason: data.reason || "",
-         fee : data. fee || 0,
+          status: data.status,
+          reason: data.reason || "",
+          fee: data.fee || 0,
         },
       };
       const result = await sessionCollection.updateOne(
@@ -148,12 +141,11 @@ async function run() {
       res.send(result);
     });
 
-
     app.put("/updateSessionFull/:id", async (req, res) => {
       const data = req.body;
       const paramsId = req.params?.id;
       console.log(data, paramsId);
-      const filter = { _id: new ObjectId(paramsId)};
+      const filter = { _id: new ObjectId(paramsId) };
       const options = { upsert: true };
       const updateDoc = {
         $set: {
@@ -178,13 +170,6 @@ async function run() {
       );
       res.send(result);
     });
-
-
-
-
-
-
-
 
     // app.patch("/updateSessions/:id", async (req, res) => {
     //   const data = req.body;
@@ -220,6 +205,11 @@ async function run() {
     app.post("/materials", async (req, res) => {
       const material = req.body;
       const result = await materialCollection.insertOne(material);
+      res.send(result);
+    });
+
+    app.get("/materials", async (req, res) => {
+      const result = await materialCollection.find().toArray();
       res.send(result);
     });
 
@@ -280,8 +270,6 @@ async function run() {
       const tutorMaterials = await bookingCollection.find(query).toArray();
       res.send(tutorMaterials);
     });
-
-
 
     app.get("/bookedSessionMaterials/:email", async (req, res) => {
       const studentEmail = req.params.email;
@@ -372,6 +360,57 @@ async function run() {
       const result = await noteCollection.deleteOne(query);
       res.send(result);
     });
+
+    //////////////////////reviews///////////////////////
+    const reviewCollection = client.db("StudyCircle").collection("reviews");
+    app.post("/reviews", async (req, res) => {
+      const reviewData = req.body;
+      console.log(reviewData);
+      const result = await reviewCollection.insertOne(reviewData);
+      res.send(result);
+      const reviewedSession = reviewData.sessionID.toString();
+      if (result.acknowledged == true) {
+        updateAverageRating(reviewedSession);
+      }
+    });
+
+    const updateAverageRating = async (reviewedSession) => {
+      console.log(reviewedSession);
+
+      const result = await reviewCollection
+        .aggregate([
+          { $match: { sessionID: reviewedSession } },
+          {
+            $group: {
+              _id: "$sessionID",
+              averageRating: { $avg: "$rating" },
+            },
+          },
+        ])
+        .toArray();
+      console.log(result);
+
+      if (result.length > 0) {
+        const newAverageRating = result[0].averageRating.toFixed(2);
+        const filter = { _id: new ObjectId(reviewedSession) };
+        const options = { upsert: true };
+        const updateDoc = {
+          $set: {
+            rating: parseFloat(newAverageRating),
+          },
+        };
+        const update = await sessionCollection.updateOne(
+          filter,
+          updateDoc,
+          options
+        );
+        console.log(update);
+
+        // console.log(
+        //   `Updated average rating for session ${reviewedSession} to ${newAverageRating}`
+        // );
+      }
+    };
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
