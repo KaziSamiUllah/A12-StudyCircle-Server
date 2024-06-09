@@ -34,20 +34,20 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     /////////////////Payment APIs///////////////////////
-    app.post('/create-payment-intent', async (req, res) => {
+    app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100);
-      console.log(amount, 'amount inside the intent')
+      console.log(amount, "amount inside the intent");
 
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
-        currency: 'usd',
-        payment_method_types: ['card']
+        currency: "usd",
+        payment_method_types: ["card"],
       });
 
       res.send({
-        clientSecret: paymentIntent.client_secret
-      })
+        clientSecret: paymentIntent.client_secret,
+      });
     });
 
     /////////////////////user APIs////////////////////
@@ -75,8 +75,25 @@ async function run() {
     });
 
     app.get("/allUsers", async (req, res) => {
-      const user = await userCollection.find().toArray();
-      res.send(user);
+      console.log(req.query.search);
+      const searchItem = req.query.search;
+      
+      if (searchItem) {
+        filter = {
+          $or: [
+            { name: { $regex: searchItem, $options: "i" } },
+            { email: { $regex: searchItem, $options: "i" } }, 
+          ],
+        };
+        const user = await userCollection.find(filter).toArray();
+        res.send(user);
+      }
+      else{
+        const user = await userCollection.find().toArray();
+        res.send(user);
+      }
+
+      
     });
 
     app.put("/editUsers/:id", async (req, res) => {
@@ -317,11 +334,11 @@ async function run() {
         },
 
         {
-          $unwind: "$materialsdata", 
+          $unwind: "$materialsdata",
         },
         {
           $project: {
-            _id: 0, 
+            _id: 0,
             materialTitle: "$materialsdata.materialTitle",
             tutorEmail: "$materialsdata.tutorEmail",
             tutorName: "$materialsdata.tutorName",
@@ -391,7 +408,7 @@ async function run() {
     const reviewCollection = client.db("StudyCircle").collection("reviews");
     app.post("/reviews", async (req, res) => {
       const reviewData = req.body;
-      console.log(reviewData);
+      // console.log(reviewData);
       const result = await reviewCollection.insertOne(reviewData);
       res.send(result);
       const reviewedSession = reviewData.sessionID.toString();
@@ -402,16 +419,11 @@ async function run() {
 
     app.get("/reviews/:sessionID", async (req, res) => {
       const sessionID = req.params.sessionID;
-      console.log(sessionID);
+      // console.log(sessionID);
       const query = { sessionID: sessionID };
       const result = await reviewCollection.find(query).toArray();
       res.send(result);
     });
-
-
-
-
-
 
     const updateAverageRating = async (reviewedSession) => {
       console.log(reviewedSession);
