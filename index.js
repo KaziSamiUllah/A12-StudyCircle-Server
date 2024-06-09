@@ -66,6 +66,14 @@ async function run() {
       res.send(user);
     });
 
+    app.get("/usersbyRole/:role", async (req, res) => {
+      const role = req.params.role;
+      console.log(role);
+      const query = { role: role };
+      const user = await userCollection.find(query).toArray();
+      res.send(user);
+    });
+
     app.get("/allUsers", async (req, res) => {
       const user = await userCollection.find().toArray();
       res.send(user);
@@ -89,9 +97,9 @@ async function run() {
     app.delete("/users/:id", async (req, res) => {
       const id = req.params.id;
       console.log(id);
-      // const query = { _id: new ObjectId(id) };
-      // const result = await userCollection.deleteOne(query);
-      // res.send(result);
+      const query = { _id: new ObjectId(id) };
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
     });
 
     ///////////////////sessions APIs/////////////////////
@@ -214,7 +222,7 @@ async function run() {
       console.log(ID);
       const query = { _id: new ObjectId(ID) };
       const result = await sessionCollection.deleteOne(query);
-      res.send(ID);
+      res.send(result);
     });
 
     //////// Materials API/////////////
@@ -309,11 +317,11 @@ async function run() {
         },
 
         {
-          $unwind: "$materialsdata", // Unwind to get individual material documents
+          $unwind: "$materialsdata", 
         },
         {
           $project: {
-            _id: 0, // Exclude _id field from output
+            _id: 0, 
             materialTitle: "$materialsdata.materialTitle",
             tutorEmail: "$materialsdata.tutorEmail",
             tutorName: "$materialsdata.tutorName",
@@ -391,6 +399,19 @@ async function run() {
         updateAverageRating(reviewedSession);
       }
     });
+
+    app.get("/reviews/:sessionID", async (req, res) => {
+      const sessionID = req.params.sessionID;
+      console.log(sessionID);
+      const query = { sessionID: sessionID };
+      const result = await reviewCollection.find(query).toArray();
+      res.send(result);
+    });
+
+
+
+
+
 
     const updateAverageRating = async (reviewedSession) => {
       console.log(reviewedSession);
