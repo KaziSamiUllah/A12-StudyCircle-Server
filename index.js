@@ -1,14 +1,49 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const jwt = require('jsonwebtoken');
 const app = express();
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
-// Use cors middleware
-app.use(cors());
+///////////////Middleware///////////////
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://study-circle-a12.web.app",
+    "https://study-circle-a12.firebaseapp.com"],
+  credentials: true,
+  optionSuccessStatus: 200,
+}));
 app.use(express.json());
+
+const verifyToken = (req, res, next) => {
+  // console.log('ami middle')
+
+
+  const token = req.headers.token;
+  if (!token) return res.status(401).send({ message: 'unauthorized access' })
+  if (token) {
+      jwt.verify(token, process.env.TOKEN_SECRET, (err, decode) => {
+          if (err) {
+              console.log(err)
+             return res.status(401).send({ message: 'forbidden access' })
+          }
+          console.log(decode);
+          req.user = decode
+          next();
+      })
+  }
+  console.log(token);
+
+
+}
+
+
+
+
+
 
 // Define a route
 app.get("/", (req, res) => {
@@ -17,7 +52,7 @@ app.get("/", (req, res) => {
 
 // Start the server
 app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+  console.log(`Server is running on ${port}`);
 });
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.unfglor.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -33,6 +68,19 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
+///////////JWT APIs//////////////////
+// JWT Generate
+app.post('/jwt', async (req, res) => {
+  const user = req.body;
+  const token = jwt.sign(user, process.env.TOKEN_SECRET, { expiresIn: '365d' });
+res.send( {token} )
+})
+
+
+
+
+
+
     /////////////////Payment APIs///////////////////////
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
@@ -67,18 +115,18 @@ async function run() {
     });
 
     app.get("/usersbyRole/:role", async (req, res) => {
-      const role = req.params.role;
+      const role = req?.params?.role;
       console.log(role);
       const query = { role: role };
       const user = await userCollection.find(query).toArray();
       res.send(user);
     });
 
-    app.get("/allUsers", async (req, res) => {
+    app.get("/allUsers", verifyToken, async (req, res) => {
       console.log(req.query.search);
       const searchItem = req.query.search;
       
-      if (searchItem) {
+      if (!!searchItem) {
         filter = {
           $or: [
             { name: { $regex: searchItem, $options: "i" } },
