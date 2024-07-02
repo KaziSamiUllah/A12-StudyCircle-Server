@@ -1,49 +1,42 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 const app = express();
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 ///////////////Middleware///////////////
-app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://study-circle-a12.web.app",
-    "https://study-circle-a12.firebaseapp.com"],
-  credentials: true,
-  optionSuccessStatus: 200,
-}));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://study-circle-a12.web.app",
+      "https://study-circle-a12.firebaseapp.com",
+    ],
+    credentials: true,
+    optionSuccessStatus: 200,
+  })
+);
 app.use(express.json());
 
 const verifyToken = (req, res, next) => {
   // console.log('ami middle')
 
-
   const token = req.headers.token;
-  if (!token) return res.status(401).send({ message: 'unauthorized access' })
+  if (!token) return res.status(401).send({ message: "unauthorized access" });
   if (token) {
-      jwt.verify(token, process.env.TOKEN_SECRET, (err, decode) => {
-          if (err) {
-              console.log(err)
-             return res.status(401).send({ message: 'forbidden access' })
-          }
-          console.log(decode);
-          req.user = decode
-          next();
-      })
+    jwt.verify(token, process.env.TOKEN_SECRET, (err, decode) => {
+      if (err) {
+        return res.status(401).send({ message: "forbidden access" });
+      }
+
+      req.user = decode;
+      next();
+    });
   }
-  console.log(token);
-
-
-}
-
-
-
-
-
+};
 
 // Define a route
 app.get("/", (req, res) => {
@@ -68,24 +61,20 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-///////////JWT APIs//////////////////
-// JWT Generate
-app.post('/jwt', async (req, res) => {
-  const user = req.body;
-  const token = jwt.sign(user, process.env.TOKEN_SECRET, { expiresIn: '365d' });
-res.send( {token} )
-})
-
-
-
-
-
+    ///////////JWT APIs//////////////////
+    // JWT Generate
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.TOKEN_SECRET, {
+        expiresIn: "365d",
+      });
+      res.send({ token });
+    });
 
     /////////////////Payment APIs///////////////////////
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100);
-      console.log(amount, "amount inside the intent");
 
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
@@ -116,38 +105,34 @@ res.send( {token} )
 
     app.get("/usersbyRole/:role", async (req, res) => {
       const role = req?.params?.role;
-      console.log(role);
+
       const query = { role: role };
       const user = await userCollection.find(query).toArray();
       res.send(user);
     });
 
     app.get("/allUsers", verifyToken, async (req, res) => {
-      console.log(req.query.search);
       const searchItem = req.query.search;
-      
+
       if (!!searchItem) {
         filter = {
           $or: [
             { name: { $regex: searchItem, $options: "i" } },
-            { email: { $regex: searchItem, $options: "i" } }, 
+            { email: { $regex: searchItem, $options: "i" } },
           ],
         };
         const user = await userCollection.find(filter).toArray();
         res.send(user);
-      }
-      else{
+      } else {
         const user = await userCollection.find().toArray();
         res.send(user);
       }
-
-      
     });
 
     app.put("/editUsers/:id", async (req, res) => {
       const data = req.body;
       const paramsId = req.params.id;
-      console.log(data, paramsId);
+
       const filter = { _id: new ObjectId(paramsId) };
       const options = { upsert: true };
       const updateDoc = {
@@ -161,7 +146,7 @@ res.send( {token} )
 
     app.delete("/users/:id", async (req, res) => {
       const id = req.params.id;
-      console.log(id);
+
       const query = { _id: new ObjectId(id) };
       const result = await userCollection.deleteOne(query);
       res.send(result);
@@ -205,7 +190,7 @@ res.send( {token} )
 
     app.get("/sessionsByStatus/:status", async (req, res) => {
       const status = req.params.status;
-      // console.log(status);
+
       const query = { status: status };
       const sessionStatus = await sessionCollection.find(query).toArray();
       res.send(sessionStatus);
@@ -214,7 +199,7 @@ res.send( {token} )
     app.put("/updateSessions/:id", async (req, res) => {
       const data = req.body;
       const paramsId = req.params?.id;
-      console.log(data, paramsId);
+
       const filter = { _id: new ObjectId(paramsId) };
       const options = { upsert: true };
       const updateDoc = {
@@ -235,7 +220,7 @@ res.send( {token} )
     app.put("/updateSessionFull/:id", async (req, res) => {
       const data = req.body;
       const paramsId = req.params?.id;
-      console.log(data, paramsId);
+
       const filter = { _id: new ObjectId(paramsId) };
       const options = { upsert: true };
       const updateDoc = {
@@ -284,7 +269,7 @@ res.send( {token} )
 
     app.delete("/sessions/:id", async (req, res) => {
       const ID = req.params.id;
-      console.log(ID);
+
       const query = { _id: new ObjectId(ID) };
       const result = await sessionCollection.deleteOne(query);
       res.send(result);
@@ -321,7 +306,7 @@ res.send( {token} )
     app.put("/materials/:id", async (req, res) => {
       const data = req.body;
       const paramsId = req.params.id;
-      // console.log(data, paramsId);
+
       const filter = { _id: new ObjectId(paramsId) };
       const options = { upsert: true };
       const updateDoc = {
@@ -350,7 +335,7 @@ res.send( {token} )
     const bookingCollection = client.db("StudyCircle").collection("bookings");
     app.post("/bookings", async (req, res) => {
       const bookings = req.body;
-      console.log(bookings);
+
       const result = await bookingCollection.insertOne(bookings);
       res.send(result);
     });
@@ -364,7 +349,7 @@ res.send( {token} )
 
     app.get("/bookedSessionMaterials/:email", async (req, res) => {
       const studentEmail = req.params.email;
-      console.log(studentEmail);
+
       var pipeline = [
         {
           $match: {
@@ -400,7 +385,7 @@ res.send( {token} )
 
       // Execute the aggregation pipeline
       var result = await bookingCollection.aggregate(pipeline).toArray();
-      console.log(result);
+
       res.send(result);
     });
 
@@ -456,7 +441,7 @@ res.send( {token} )
     const reviewCollection = client.db("StudyCircle").collection("reviews");
     app.post("/reviews", async (req, res) => {
       const reviewData = req.body;
-      // console.log(reviewData);
+
       const result = await reviewCollection.insertOne(reviewData);
       res.send(result);
       const reviewedSession = reviewData.sessionID.toString();
@@ -467,15 +452,13 @@ res.send( {token} )
 
     app.get("/reviews/:sessionID", async (req, res) => {
       const sessionID = req.params.sessionID;
-      // console.log(sessionID);
+
       const query = { sessionID: sessionID };
       const result = await reviewCollection.find(query).toArray();
       res.send(result);
     });
 
     const updateAverageRating = async (reviewedSession) => {
-      console.log(reviewedSession);
-
       const result = await reviewCollection
         .aggregate([
           { $match: { sessionID: reviewedSession } },
@@ -487,7 +470,6 @@ res.send( {token} )
           },
         ])
         .toArray();
-      console.log(result);
 
       if (result.length > 0) {
         const newAverageRating = result[0].averageRating.toFixed(2);
@@ -503,19 +485,8 @@ res.send( {token} )
           updateDoc,
           options
         );
-        console.log(update);
-
-        // console.log(
-        //   `Updated average rating for session ${reviewedSession} to ${newAverageRating}`
-        // );
       }
     };
-
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
